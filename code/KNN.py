@@ -4,6 +4,7 @@ import os
 from sklearn.model_selection import train_test_split
 
 T = [[2, 3], [5, 4], [9, 6], [4, 7], [8, 1], [7, 2]]
+L = [1, 0, 1, 1, 1, 1]
 
 
 class node:
@@ -37,47 +38,51 @@ def selectSplit(lst):
     maxIndex = np.argmax(stdLst)
     return maxIndex
 
+#
+# def build_kdtree(data,  d, max_leaf_num=5000):
+#     # selectedSplit = int(selectSplit(data))
+#
+#     # # tmp = sorted(zip(data, label), key=lambda d: d[0][selectedSplit])
+#     # orderedIndex = np.argsort(label[:, selectedSplit])
+#     data = sorted(data, key=lambda x: x[0][d])
+#
+#     p, m = median(data)
+#     print(p)
+#     tree = node(p[0])
+#     tree.roof = d
+#     tree.kind = p[1]  # 记录类别
+#
+#     del data[m]
+#     if m > 0 and len(leafs1) < max_leaf_num:  # 控制叶子节点数
+#         tree.set_left(build_kdtree(data[:m], not d, max_leaf_num))
+#     if len(data) > 1 and len(leafs1) < max_leaf_num:
+#         tree.set_right(build_kdtree(data[m:], not d, max_leaf_num))
+#     if tree.left is None and tree.right is None:
+#         leafs1.append(tree.point)
+#     return tree
 
-def build_kdtree(data,  d, max_leaf_num=5000):
-    # selectedSplit = int(selectSplit(data))
 
-    # # tmp = sorted(zip(data, label), key=lambda d: d[0][selectedSplit])
-    # orderedIndex = np.argsort(label[:, selectedSplit])
-    data = sorted(data, key=lambda x: x[0][d])
+def build_kdtree_T(data, max_leaf_num=5000):
+    selectedSplit = int(selectSplit([d[0] for d in data]))
+
+    data = sorted(data, key=lambda x: x[0][selectedSplit])
 
     p, m = median(data)
     tree = node(p[0])
-    tree.roof = d
-    tree.kind = p[1]  # 记录类别
+    tree.roof = selectedSplit
 
     del data[m]
     if m > 0 and len(leafs1) < max_leaf_num:  # 控制叶子节点数
-        tree.set_left(build_kdtree(data[:m], not d, max_leaf_num))
+        tree.set_left(build_kdtree_T(data[:m], max_leaf_num))
     if len(data) > 1 and len(leafs1) < max_leaf_num:
-        tree.set_right(build_kdtree(data[m:], not d, max_leaf_num))
-    if tree.left is None and tree.right is None:
-        leafs1.append(tree.point)
-    return tree
-
-
-def build_kdtree_T(data, d):
-    data = sorted(data, key=lambda x: x[d])
-    p, m = median(data)
-    tree = node(p)
-    tree.roof = d
-
-    del data[m]
-    if m > 0:  # 控制叶子节点数
-        tree.set_left(build_kdtree_T(data[:m], not d))
-    if len(data) > 1:
-        tree.set_right(build_kdtree_T(data[m:], not d))
+        tree.set_right(build_kdtree_T(data[m:], max_leaf_num))
     if tree.left is None and tree.right is None:
         leafs1.append(tree.point)
     return tree
 
 
 def distance(a, b):
-    print(a, b)
+    # print(a, b)
     return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
 
 
@@ -85,7 +90,7 @@ def printPath(search_path):
     result = []
     for s in search_path:
         result.append(s.point)
-    print('search_path:', len(result), result)
+    # print('search_path:', len(result), result)
 
 
 def search_kdtree_T1(root, d, target):
@@ -106,7 +111,7 @@ def search_kdtree_T1(root, d, target):
 
     # 回溯
     while len(search_path) > 0:
-        printPath(search_path)
+        # printPath(search_path)
         pBack = search_path[-1]
         search_path = search_path[:-1]
 
@@ -174,10 +179,14 @@ if __name__ == '__main__':
 
     train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=0.3, random_state=0)
 
-    # kd_tree = build_kdtree(zip(train_x.tolist(), train_y.tolist()), 30)
-    kd_tree = build_kdtree_T(T, 0)
+
+    dataset = [(d, l) for d, l in zip(train_x.tolist(), train_y.tolist())]
+    # dataset = [(d, l) for d, l in zip(T, L)]
+
+    kd_tree = build_kdtree_T(dataset, 30)
+    # kd_tree = build_kdtree_T(dataset)
 
     deepSearch(kd_tree)
     print('node num:', len(samples))
     print('finished')
-    # print(search_kdtree_T1(kd_tree, 0, test_x[1]))
+    print(search_kdtree_T1(kd_tree, 0, test_x[0]))
