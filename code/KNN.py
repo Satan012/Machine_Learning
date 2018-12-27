@@ -15,7 +15,7 @@ class node:
         self.parent = None
         self.roof = None
         self.kind = None
-        pass
+        self.node_num = None  # 对节点进行编号
 
     def set_left(self, left):
         if left is None: pass
@@ -47,6 +47,10 @@ def build_kdtree_T(data, max_leaf_num=5000):
     p, m = median(data)
     tree = node(p[0])
     tree.roof = selectedSplit
+    tree.kind = p[1]
+
+    samples.append(tree)  # 为了为每个node打上id，便于k临近搜索
+    tree.node_num = len(samples)
 
     del data[m]
     if m > 0 and len(leafs1) < max_leaf_num:  # 控制叶子节点数
@@ -125,6 +129,7 @@ if __name__ == '__main__':
     indexOrder = []
     samples = []
     kLst = []  # 存储已经找到的邻居点
+    global_num = 0
 
     FALL = {'bus': ' ', 'bath': ' ', 'teeth': ' ', 'basketball': ' '}
 
@@ -159,7 +164,6 @@ if __name__ == '__main__':
     # from sklearn.neighbors import KDTree
     # kd_tree1 = KDTree(train_x, leaf_size=30)
 
-    deepSearch(kd_tree)
     print('node num:', len(samples))
     print('finished')
     print(search_kdtree_T1(kd_tree, test_x[0])[0])
