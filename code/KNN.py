@@ -29,7 +29,7 @@ class node:
 
 
 def median(lst):
-    m = len(lst) // 2
+    m = int(len(lst) / 2)
     return lst[m], m
 
 
@@ -49,8 +49,8 @@ def build_kdtree_T(data, max_leaf_num=5000):
     tree.roof = selectedSplit
     tree.kind = p[1]
 
-    samples.append(tree)  # 为了为每个node打上id，便于k临近搜索
-    tree.node_num = len(samples)
+    sample_kind.append(tree.kind)  # 为了为每个node打上id，便于k临近搜索
+    tree.node_num = len(sample_kind)-1
 
     del data[m]
     if m > 0 and len(leafs1) < max_leaf_num:  # 控制叶子节点数
@@ -64,13 +64,16 @@ def build_kdtree_T(data, max_leaf_num=5000):
 
 def distance(a, b):
     dist = np.sqrt(np.sum(np.square(a - b)))
+    # print('dist:', dist)
     return dist
 
 
 def printPath(search_path):
     result = []
     for s in search_path:
-        result.append(s.point)
+        # print(s.node_num)
+        result.append(s.node_num)
+    print(result)
 
 
 def search_kdtree_T1(root, target):
@@ -80,56 +83,65 @@ def search_kdtree_T1(root, target):
     while pSearch is not None:  # 搜索近似最近点，创建搜索路径
         search_path.append(pSearch)
 
-        if target[pSearch.roof] <= pSearch.point[pSearch.roof]:
+        if target[pSearch.roof] < pSearch.point[pSearch.roof]:
             pSearch = pSearch.left
         else:
             pSearch = pSearch.right
 
     # 用最后一项赋值best
-    nearest = [search_path[-1].point, distance(search_path[-1].point, target)]
+    nearest = [None, 10000, -1]  # init nearest
+
+    if search_path[-1].node_num not in kLst:  # 若近似临近节点已经被认为是k临近中的一个，则忽略它
+        nearest = [search_path[-1].point, distance(search_path[-1].point, target), search_path[-1].node_num]
 
     # 回溯
     while len(search_path) > 0:
+        # printPath(search_path)
         pBack = search_path[-1]
         search_path = search_path[:-1]
 
-        if pBack.left is None and pBack.right is None:  # 该节点是叶子结点
-            if distance(pBack.point, target) < nearest[1]:
-                nearest = [pBack.point, distance(pBack.point, target)]
+        if pBack.left is None and pBack.right is None:  # 该节点是叶子结点且不是已被记录的k临近点
+            if distance(pBack.point, target) < nearest[1] and pBack.node_num not in kLst:
+                nearest = [pBack.point, distance(pBack.point, target), pBack.node_num]
         else:
-            if abs(pBack.point[pBack.roof] - target[pBack.roof]) < nearest[1]:
-                if nearest[1] > distance(pBack.point, target):
-                    nearest = [pBack.point, distance(pBack.point, target)]
+            if abs(pBack.point[pBack.roof] - target[pBack.roof]) <= nearest[1]:  # pBack节点在画圆范围内，需要进入子空间搜索
+                if nearest[1] > distance(pBack.point, target) and pBack.node_num not in kLst:  # 不是已被记录的k临近点
+                    nearest = [pBack.point, distance(pBack.point, target), pBack.node_num]
 
-                if target[pBack.roof] <= pBack.point[pBack.roof]:
-                    pSearch = pBack.right
-                else:
-                    pSearch = pBack.left
-                if pSearch is not None:
-                    search_path.append(pSearch)
+                # if target[pBack.roof] > pBack.point[pBack.roof]:
+                #     pSearch = pBack.right
+                # else:
+                #     pSearch = pBack.left
+                # if pSearch is not None:
+                #     search_path.append(pSearch)
+
+                if pBack.right is not None:
+                    search_path.append(pBack.right)
+                if pBack.left is not None:
+                    search_path.append(pBack.left)
+
+
     return nearest
 
 
 def deepSearch(root):
     if root.left is None and root.right is None:
-        samples.append((root.point, root.kind))
-        leafs.append(root.point)
+        print(distance(root.point, test_x[0]), root.node_num)
         return
 
     if root.left is not None:
         deepSearch(root.left)
     if root.right is not None:
         deepSearch(root.right)
-    samples.append((root.point, root.kind))
+    print(distance(root.point, test_x[0]), root.node_num)
 
 
 if __name__ == '__main__':
     leafs = []
     leafs1 = []
     indexOrder = []
-    samples = []
+    sample_kind = []
     kLst = []  # 存储已经找到的邻居点
-    global_num = 0
 
     FALL = {'bus': ' ', 'bath': ' ', 'teeth': ' ', 'basketball': ' '}
 
@@ -161,10 +173,18 @@ if __name__ == '__main__':
 
     kd_tree = build_kdtree_T(dataset, 30)
 
-    # from sklearn.neighbors import KDTree
-    # kd_tree1 = KDTree(train_x, leaf_size=30)
+    # deepSearch(kd_tree)
+    from sklearn.neighbors import KDTree
+    kd_tree1 = KDTree(train_x, leaf_size=30)
 
-    print('node num:', len(samples))
+    print('node num:', len(sample_kind))
     print('finished')
-    print(search_kdtree_T1(kd_tree, test_x[0])[0])
-    # dist, ind = kd_tree1.query(np.reshape(test_x[0], [1, -1]), k=1)
+    for k in range(5):
+        tmp_root = kd_tree
+        near = search_kdtree_T1(tmp_root, test_x[0])
+        print(near[0])
+        kLst.append(near[-1])
+
+    print(np.array(sample_kind)[kLst])
+    dist, ind = kd_tree1.query(np.reshape(test_x[0], [1, -1]), k=5)
+    print(train_y[ind])
