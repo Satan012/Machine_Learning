@@ -38,29 +38,6 @@ def selectSplit(lst):
     maxIndex = np.argmax(stdLst)
     return maxIndex
 
-#
-# def build_kdtree(data,  d, max_leaf_num=5000):
-#     # selectedSplit = int(selectSplit(data))
-#
-#     # # tmp = sorted(zip(data, label), key=lambda d: d[0][selectedSplit])
-#     # orderedIndex = np.argsort(label[:, selectedSplit])
-#     data = sorted(data, key=lambda x: x[0][d])
-#
-#     p, m = median(data)
-#     print(p)
-#     tree = node(p[0])
-#     tree.roof = d
-#     tree.kind = p[1]  # 记录类别
-#
-#     del data[m]
-#     if m > 0 and len(leafs1) < max_leaf_num:  # 控制叶子节点数
-#         tree.set_left(build_kdtree(data[:m], not d, max_leaf_num))
-#     if len(data) > 1 and len(leafs1) < max_leaf_num:
-#         tree.set_right(build_kdtree(data[m:], not d, max_leaf_num))
-#     if tree.left is None and tree.right is None:
-#         leafs1.append(tree.point)
-#     return tree
-
 
 def build_kdtree_T(data, max_leaf_num=5000):
     selectedSplit = int(selectSplit([d[0] for d in data]))
@@ -82,24 +59,22 @@ def build_kdtree_T(data, max_leaf_num=5000):
 
 
 def distance(a, b):
-    # print(a, b)
-    return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
+    dist = np.sqrt(np.sum(np.square(a - b)))
+    return dist
 
 
 def printPath(search_path):
     result = []
     for s in search_path:
         result.append(s.point)
-    # print('search_path:', len(result), result)
 
 
-def search_kdtree_T1(root, d, target):
+def search_kdtree_T1(root, target):
     search_path = []
     pSearch = root
 
-    while pSearch is not None:
+    while pSearch is not None:  # 搜索近似最近点，创建搜索路径
         search_path.append(pSearch)
-        # print('add:', pSearch.point)
 
         if target[pSearch.roof] <= pSearch.point[pSearch.roof]:
             pSearch = pSearch.left
@@ -111,7 +86,6 @@ def search_kdtree_T1(root, d, target):
 
     # 回溯
     while len(search_path) > 0:
-        # printPath(search_path)
         pBack = search_path[-1]
         search_path = search_path[:-1]
 
@@ -134,7 +108,6 @@ def search_kdtree_T1(root, d, target):
 
 def deepSearch(root):
     if root.left is None and root.right is None:
-        # print('point:', root.point)
         samples.append((root.point, root.kind))
         leafs.append(root.point)
         return
@@ -143,7 +116,6 @@ def deepSearch(root):
         deepSearch(root.left)
     if root.right is not None:
         deepSearch(root.right)
-    # print('point:', root.point)
     samples.append((root.point, root.kind))
 
 
@@ -152,6 +124,7 @@ if __name__ == '__main__':
     leafs1 = []
     indexOrder = []
     samples = []
+    kLst = []  # 存储已经找到的邻居点
 
     FALL = {'bus': ' ', 'bath': ' ', 'teeth': ' ', 'basketball': ' '}
 
@@ -179,14 +152,15 @@ if __name__ == '__main__':
 
     train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=0.3, random_state=0)
 
-
     dataset = [(d, l) for d, l in zip(train_x.tolist(), train_y.tolist())]
-    # dataset = [(d, l) for d, l in zip(T, L)]
 
     kd_tree = build_kdtree_T(dataset, 30)
-    # kd_tree = build_kdtree_T(dataset)
+
+    # from sklearn.neighbors import KDTree
+    # kd_tree1 = KDTree(train_x, leaf_size=30)
 
     deepSearch(kd_tree)
     print('node num:', len(samples))
     print('finished')
-    print(search_kdtree_T1(kd_tree, 0, test_x[0]))
+    print(search_kdtree_T1(kd_tree, test_x[0])[0])
+    # dist, ind = kd_tree1.query(np.reshape(test_x[0], [1, -1]), k=1)
