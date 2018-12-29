@@ -68,6 +68,42 @@ def build_kdtree_T(data, max_leaf_num=5000):
     return tree
 
 
+def rebuildTree(rootFirst, rootMiddle):
+    root_num = rootFirst[0]
+    rootIndex = rootMiddle.index(root_num)
+    leftMember = rootMiddle[:rootIndex]  # left root middle
+    rightMember = rootMiddle[rootIndex+1:]  # right root middle
+
+    subLeft_RootFirst = [r for r in rootFirst if r in leftMember]
+    subRight_RootFirst = [r for r in rootFirst if r in rightMember]
+    print('root: {} left: {} right:{}'.format(root_num, subLeft_RootFirst, subRight_RootFirst))
+
+    tree = node(None)
+    tree.node_num = root_num
+
+    if len(subLeft_RootFirst) > 0:
+        tree.set_left(rebuildTree(subLeft_RootFirst, leftMember))
+    if len(subRight_RootFirst) > 0:
+        tree.set_right(rebuildTree(subRight_RootFirst, rightMember))
+    return tree
+
+
+def rebuildTree_1(first_start, middle_start, size):
+    if size == 0:
+        return None
+    else:
+        print(first_start)
+        rootIndex = middle.index(first[first_start])
+        root = node(None)
+        root.node_num = first[first_start]
+
+        root.left = rebuildTree_1(first_start+1, middle_start, rootIndex)
+        root.right = rebuildTree_1(first_start+rootIndex+1, middle_start+rootIndex+1, size-rootIndex-1)
+        return root
+
+
+
+
 def distance(a, b):
     dist = np.sqrt(np.sum(np.square(a - b)))
     # print('dist:', dist)
@@ -127,16 +163,23 @@ def search_kdtree_T1(root, target, kLst):
     return nearest
 
 
-def deepSearch(root):
+def deepSearch(root, searchKind):
+    """
     if root.left is None and root.right is None:
-        print(distance(root.point, test_x[0]), root.node_num)
+        # print(distance(root.point, test_x[0]), root.node_num)
+        print(root.node_num)
         return
-
+    """
+    if searchKind == 'first':  # 先根遍历输出点
+        firstLst.append(root.node_num)
     if root.left is not None:
-        deepSearch(root.left)
+        deepSearch(root.left, searchKind)
+    if searchKind == 'middle':  # 中根遍历输出点
+        middleLst.append(root.node_num)
     if root.right is not None:
-        deepSearch(root.right)
-    print(distance(root.point, test_x[0]), root.node_num)
+        deepSearch(root.right, searchKind)
+    if searchKind == 'last':
+        lastLst.append(root.node_num)
 
 
 def K_neighbors(root, target, sample_kind, k=5):
@@ -156,6 +199,18 @@ def K_neighbors(root, target, sample_kind, k=5):
 
 
 if __name__ == '__main__':
+    firstLst = []
+    middleLst = []
+    lastLst = []
+    first = ['a', 'b', 'd', 'g', 'c', 'e', 'f', 'h']
+    middle = ['d', 'g', 'b', 'a', 'e', 'c', 'h', 'f']
+    root = None
+    tree = rebuildTree_1(0, 0, len(first))
+    deepSearch(tree, 'last')
+    print(lastLst)
+    exit(0)
+
+
     leafs = []
     leafs1 = []
     sample_kind = []
@@ -195,6 +250,13 @@ if __name__ == '__main__':
     kd_tree1 = KDTree(train_x, leaf_size=30)
     print('node num:', len(sample_kind))
     print('finished')
+    tmp = kd_tree
+    deepSearch(tmp, 'first')
+    tmp = kd_tree
+    deepSearch(tmp, 'middle')
+    print(firstLst)
+    print(middleLst)
+    exit(0)
     # deepSearch(kd_tree)
 
     ## test
